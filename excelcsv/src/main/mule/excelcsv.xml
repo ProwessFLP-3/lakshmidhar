@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:file="http://www.mulesoft.org/schema/mule/file"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http"
+	xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/file http://www.mulesoft.org/schema/mule/file/current/mule-file.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="d1ddb69c-9bbd-4609-b410-6ae9a0e5bdaa" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<file:config name="File_Config" doc:name="File Config" doc:id="10bb0cac-b2e4-44c4-a3f1-14827370fdbc" />
+	<flow name="excelcsvFlow" doc:id="3e5bce3c-7bc3-4aa7-86da-ae4a7a56cf7e" >
+		<scheduler doc:name="Scheduler" doc:id="594c06cb-c0c4-4c3b-8d7e-7430ede9308d" >
+			<scheduling-strategy >
+				<fixed-frequency />
+			</scheduling-strategy>
+		</scheduler>
+		<file:list doc:id="ff87e76a-42f8-4eda-b75d-fd0cd9e6269c" config-ref="File_Config" directoryPath="D:\Test\Input">
+			<file:matcher />
+		</file:list>
+		<set-variable value="#[payload]" doc:name="Set Variable" doc:id="1165a2a5-109d-4a67-9808-1a9589b08267" variableName="meta"/>
+		<file:read doc:name="Read Excel" doc:id="3cf9ce9e-d75b-4f1d-bd87-9ed6a8c365e5" path="#[vars.meta[3].attributes.path]" config-ref="File_Config" outputMimeType="application/xlsx"/>
+		<ee:transform doc:name="Transform Message" doc:id="8176d8aa-d32d-47a8-99aa-f1568e90bb62" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{
+}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="first" ><![CDATA[%dw 2.0
+input payload application/xlsx
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<file:read doc:name="Read CSV" doc:id="a8c1c56d-c6be-4263-b159-1c128f3bf86d" path="#[vars.meta[2].attributes.path]" config-ref="File_Config"/>
+		<ee:transform doc:name="Transform Message" doc:id="e44e6d5c-bd64-4a4f-bd8b-e2c0dded7f95" >
+			<ee:message >
+				<ee:set-payload ><![CDATA[%dw 2.0
+output application/java
+---
+{}]]></ee:set-payload>
+			</ee:message>
+			<ee:variables >
+				<ee:set-variable variableName="first" ><![CDATA[%dw 2.0
+output application/json
+---
+payload]]></ee:set-variable>
+				<ee:set-variable variableName="second" ><![CDATA[%dw 2.0
+input payoad application/csv
+output application/json
+---
+payload]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<logger level="INFO" doc:name="Logger" doc:id="db4aa16b-322b-4aee-8fbb-954f31c87838" message="#[vars.first ++ vars.second]" />
+	</flow>
+</mule>
